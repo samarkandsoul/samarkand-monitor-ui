@@ -79,7 +79,7 @@ export default function Home({ core, agents }) {
           gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
         }}
       >
-        {/* 🧠 Core monitor service */}
+        {/* 🧠 Monitor service */}
         <section
           style={{
             borderRadius: "16px",
@@ -110,7 +110,7 @@ export default function Home({ core, agents }) {
           )}
         </section>
 
-        {/* 🤖 Brat agent backend statusu */}
+        {/* 🤖 Brat agent backend */}
         <section
           style={{
             borderRadius: "16px",
