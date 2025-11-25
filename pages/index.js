@@ -80,4 +80,4 @@ export default function Home({ monitorData, error }) {
       </section>
     </main>
   );
-}
+      }
