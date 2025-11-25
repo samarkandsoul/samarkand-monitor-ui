@@ -1,41 +1,65 @@
 // pages/index.js
 import React from "react";
 
-export async function getServerSideProps() {
-  let monitorData = null;
-  let error = null;
+const API_BASE = "https://samarkand-monitor.onrender.com";
 
+async function safeFetchJson(url) {
   try {
-    const res = await fetch(
-      "https://samarkand-monitor.onrender.com/health/core",
-      { method: "GET" }
-    );
+    const res = await fetch(url, { method: "GET" });
 
     if (!res.ok) {
-      throw new Error("Backenddən düzgün cavab gəlmədi");
+      throw new Error(`HTTP ${res.status}`);
     }
 
-    monitorData = await res.json();
+    return await res.json();
   } catch (e) {
-    error = "Monitor backend-ə qoşulmaq alınmadı";
+    return null;
   }
+}
+
+export async function getServerSideProps() {
+  const [core, agents] = await Promise.all([
+    safeFetchJson(`${API_BASE}/health/core`),
+    safeFetchJson(`${API_BASE}/health/agents`),
+  ]);
 
   return {
     props: {
-      monitorData,
-      error,
+      core,
+      agents,
     },
   };
 }
 
-export default function Home({ monitorData, error }) {
+function StatusPill({ value }) {
+  let label = value;
+  if (value === "alive") label = "✅ Alive";
+  if (value === "degraded") label = "⚠️ Degraded";
+  if (value === "down") label = "🔥 Down";
+
+  return (
+    <span
+      style={{
+        padding: "2px 10px",
+        borderRadius: "999px",
+        background: "#111827",
+        border: "1px solid #374151",
+        fontSize: "13px",
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
+export default function Home({ core, agents }) {
   return (
     <main
       style={{
         minHeight: "100vh",
         padding: "24px",
         fontFamily:
-          "system-ui, -apple-system, BlinkMacSystemFont, BlinkMacSystemFont, sans-serif",
+          "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
         background: "#050816",
         color: "#f5f5f5",
       }}
@@ -47,38 +71,94 @@ export default function Home({ monitorData, error }) {
         Sistem ürək döyüntüləri (heartbeat) statusu
       </p>
 
-      <section
+      <div
         style={{
-          borderRadius: "16px",
-          padding: "20px",
-          background: "#0b1020",
-          border: "1px solid #262c4a",
-          maxWidth: "480px",
+          display: "grid",
+          gap: "16px",
+          maxWidth: "900px",
+          gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
         }}
       >
-        <h2 style={{ fontSize: "20px", marginBottom: "12px" }}>
-          🧠 Monitor Service
-        </h2>
+        {/* 🧠 Core monitor service */}
+        <section
+          style={{
+            borderRadius: "16px",
+            padding: "20px",
+            background: "#0b1020",
+            border: "1px solid #262c4a",
+          }}
+        >
+          <h2 style={{ fontSize: "20px", marginBottom: "12px" }}>
+            🧠 Monitor Service
+          </h2>
 
-        {error && <p style={{ color: "#ff6b6b" }}>❌ {error}</p>}
+          {!core && <p>Yüklənir və ya backend cavab vermədi...</p>}
 
-        {monitorData && (
-          <div>
-            <p>
-              <strong>Status:</strong>{" "}
-              {monitorData.status === "alive" ? "✅ Alive" : monitorData.status}
-            </p>
-            <p>
-              <strong>Service:</strong> {monitorData.service}
-            </p>
-            <p>
-              <strong>Message:</strong> {monitorData.message}
-            </p>
-          </div>
-        )}
+          {core && (
+            <div style={{ display: "grid", gap: "6px", fontSize: "14px" }}>
+              <div>
+                <strong>Status:</strong>{" "}
+                <StatusPill value={core.status || "unknown"} />
+              </div>
+              <div>
+                <strong>Service:</strong> {core.service}
+              </div>
+              <div>
+                <strong>Message:</strong> {core.message}
+              </div>
+            </div>
+          )}
+        </section>
 
-        {!error && !monitorData && <p>Yüklənir...</p>}
-      </section>
+        {/* 🤖 Brat agent backend statusu */}
+        <section
+          style={{
+            borderRadius: "16px",
+            padding: "20px",
+            background: "#0b1020",
+            border: "1px solid #262c4a",
+          }}
+        >
+          <h2 style={{ fontSize: "20px", marginBottom: "12px" }}>
+            🤖 Brat Agent Backend
+          </h2>
+
+          {!agents && <p>Yüklənir və ya backend cavab vermədi...</p>}
+
+          {agents && (
+            <div style={{ display: "grid", gap: "6px", fontSize: "14px" }}>
+              <div>
+                <strong>Overall:</strong>{" "}
+                <StatusPill value={agents.status || "unknown"} />
+              </div>
+              <div>
+                <strong>Service:</strong> {agents.service}
+              </div>
+
+              {agents.brat_agent_backend && (
+                <>
+                  <div>
+                    <strong>Agent status:</strong>{" "}
+                    <StatusPill
+                      value={agents.brat_agent_backend.status || "unknown"}
+                    />
+                  </div>
+                  <div>
+                    <strong>HTTP code:</strong>{" "}
+                    {agents.brat_agent_backend.http_status ?? "—"}
+                  </div>
+                  {agents.brat_agent_backend.error && (
+                    <div style={{ color: "#f97373" }}>
+                      <strong>Error:</strong>{" "}
+                      {agents.brat_agent_backend.error}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+        </section>
+      </div>
     </main>
   );
-}
+        }
