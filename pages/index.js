@@ -6,9 +6,15 @@ export async function getServerSideProps() {
   let error = null;
 
   try {
-    const res = await fetch("https://samarkand-monitor.onrender.com", {
-      method: "GET",
-    });
+    const res = await fetch(
+      "https://samarkand-monitor.onrender.com/health/core",
+      { method: "GET" }
+    );
+
+    if (!res.ok) {
+      throw new Error("Backenddən düzgün cavab gəlmədi");
+    }
+
     monitorData = await res.json();
   } catch (e) {
     error = "Monitor backend-ə qoşulmaq alınmadı";
@@ -28,7 +34,8 @@ export default function Home({ monitorData, error }) {
       style={{
         minHeight: "100vh",
         padding: "24px",
-        fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+        fontFamily:
+          "system-ui, -apple-system, BlinkMacSystemFont, BlinkMacSystemFont, sans-serif",
         background: "#050816",
         color: "#f5f5f5",
       }}
@@ -53,11 +60,7 @@ export default function Home({ monitorData, error }) {
           🧠 Monitor Service
         </h2>
 
-        {error && (
-          <p style={{ color: "#ff6b6b" }}>
-            ❌ {error}
-          </p>
-        )}
+        {error && <p style={{ color: "#ff6b6b" }}>❌ {error}</p>}
 
         {monitorData && (
           <div>
@@ -74,10 +77,8 @@ export default function Home({ monitorData, error }) {
           </div>
         )}
 
-        {!error && !monitorData && (
-          <p>Yüklənir...</p>
-        )}
+        {!error && !monitorData && <p>Yüklənir...</p>}
       </section>
     </main>
   );
-      }
+}
